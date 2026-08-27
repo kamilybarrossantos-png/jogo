@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏎️ Corrida de Carros - Multiplayer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0d1a2e 100%);
+            font-family: 'Segoe UI', 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        #game-container {
+            background: rgba(15, 20, 40, 0.95);
+            border: 3px solid #4a7a9a;
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.9), 0 0 60px rgba(74, 122, 154, 0.15);
+            max-width: 1000px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 5px;
+            animation: fadeIn 0.4s ease;
+        }
+        .screen.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            background: rgba(25, 35, 65, 0.85);
+            border: 1px solid #4a7a9a;
+            border-radius: 25px;
+            padding: 30px 28px;
+            width: 100%;
+            box-shadow: inset 0 2px 20px rgba(0,0,0,0.5);
+        }
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        input, button {
+            background: rgba(15, 25, 55, 0.9);
+            border: 2px solid #3a6a8a;
+            color: #f0f0f0;
+            padding: 14px 24px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            outline: none;
+            font-family: inherit;
+        }
+        input {
+            flex: 2;
+            min-width: 150px;
+        }
+        input:focus {
+            border-color: #6aafd8;
+            box-shadow: 0 0 25px rgba(74, 122, 154, 0.4);
+            background: rgba(20, 35, 70, 0.9);
+        }
+        button {
+            background: linear-gradient(145deg, #2a5a7a, #1a4a6a);
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            border-color: #5a8aaa;
+            box-shadow: 0 4px 0 #0a1a2a;
+            transition: all 0.15s;
+            font-weight: 700;
+        }
+        button:hover {
+            background: linear-gradient(145deg, #3a6a8a, #2a5a7a);
+            transform: scale(0.97);
+            border-color: #7aaad5;
+        }
+        button:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        .btn-secondary {
+            background: linear-gradient(145deg, #4a3a5a, #3a2a4a);
+            border-color: #6a5a8a;
+            box-shadow: 0 4px 0 #1a0a2a;
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(145deg, #5a4a6a, #4a3a5a);
+        }
+        .btn-success {
+            background: linear-gradient(145deg, #2a7a4a, #1a6a3a);
+            border-color: #4aaa6a;
+            box-shadow: 0 4px 0 #0a3a1a;
+        }
+        .btn-success:hover {
+            background: linear-gradient(145deg, #3a8a5a, #2a7a4a);
+        }
+        .btn-danger {
+            background: linear-gradient(145deg, #7a2a2a, #6a1a1a);
+            border-color: #aa4a4a;
+            box-shadow: 0 4px 0 #3a0a0a;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(145deg, #8a3a3a, #7a2a2a);
+        }
+        .rank-list {
+            background: rgba(10, 15, 30, 0.7);
+            border-radius: 18px;
+            padding: 12px 16px;
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            border: 1px solid #3a5a6a;
+            margin-top: 8px;
+        }
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(60, 80, 120, 0.3);
+            font-weight: 500;
+        }
+        .rank-item:last-child {
+            border: none;
+        }
+        .rank-item .pos {
+            color: #8aafd8;
+            margin-right: 12px;
+        }
+        .rank-item .pts {
+            color: #f0d060;
+            font-weight: 700;
+        }
+        .title {
+            font-size: 2.2rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #6aafd8, #aac8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+        }
+        .subtitle {
+            color: #8aafd8;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        .help-tip {
+            background: rgba(25, 35, 65, 0.6);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: #7a9ac0;
+            border: 1px dashed #4a6a8a;
+            cursor: default;
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            width: 100%;
+            padding: 8px 4px;
+            gap: 10px;
+        }
+        .game-header .phase-badge {
+            background: rgba(30, 50, 90, 0.7);
+            padding: 6px 22px;
+            border-radius: 40px;
+            border: 1px solid #4a7a9a;
+            font-weight: 700;
+            color: #aac8ff;
+            font-size: 1.1rem;
+        }
+        #gameCanvas {
+            background: #0a0a1a;
+            border-radius: 20px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            display: block;
+            border: 3px solid #2a4a6a;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.8);
+        }
+        .hud {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 10px 4px 0 4px;
+            gap: 8px;
+            font-size: 1rem;
+            color: #b0c8e8;
+        }
+        .hud span {
+            background: rgba(15, 25, 55, 0.7);
+            padding: 6px 16px;
+            border-radius: 40px;
+            border: 1px solid #3a5a7a;
+        }
+        .status-msg {
+            background: rgba(15, 25, 55, 0.8);
+            padding: 10px 20px;
+            border-radius: 60px;
+            border-left: 6px solid #4a8ad8;
+            font-weight: 600;
+            color: #d0dff0;
+            width: 100%;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .footer-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 6px 0;
+            width: 100%;
+        }
+        .lives-display {
+            color: #f0a0a0;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(30, 40, 70, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 4px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a8ad8, #6ab0f0);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        #helpScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 8, 20, 0.93);
+            backdrop-filter: blur(6px);
+            border-radius: 30px;
+            z-index: 100;
+            justify-content: center;
+            padding: 30px;
+        }
+        #helpScreen .card {
+            max-width: 550px;
+            margin: auto;
+            border: 2px solid #5a7aaa;
+        }
+        #helpScreen ul {
+            text-align: left;
+            list-style: none;
+            line-height: 2.4;
+            padding: 8px 12px;
+        }
+        #helpScreen ul li::before {
+            content: "▸ ";
+            color: #6aafd8;
+        }
+        .close-help {
+            margin-top: 16px;
+        }
+        .objetivo-box {
+            background: rgba(20, 50, 80, 0.5);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border-left: 3px solid #f0d060;
+        }
+        .velocidade-display {
+            color: #6af0a0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <!-- TELA DE LOGIN + RANKING -->
+    <div id="loginScreen" class="screen active">
+        <div class="card" style="text-align:center;">
+            <div class="title">🏎️ CORRIDA</div>
+            <div class="subtitle">multiplayer • fases • ranking</div>
+            <div style="margin: 18px 0 8px;">
+                <div class="input-group">
+                    <input type="text" id="usernameInput" placeholder="Seu nome" value="Piloto" style="flex:2;">
+                    <button id="loginBtn">🚀 ENTRAR</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #3a4a6a; padding-top: 18px; margin-top: 6px;">
+                <div style="display:flex; justify-content:space-between; padding:0 6px; font-weight:300; color:#8aafd8;">
+                    <span>🏆 RANKING</span>
+                    <span>top 5</span>
+                </div>
+                <div id="rankingList" class="rank-list">
+                    <div class="rank-item"><span>— carregando —</span><span></span></div>
+                </div>
+                <button id="resetRankBtn" class="btn-secondary" style="margin-top:10px; font-size:0.75rem; padding:8px 18px;">🔄 resetar ranking</button>
+            </div>
+            <div class="help-tip" style="margin-top:16px;">📖 Pressione F1 durante o jogo para ajuda</div>
+        </div>
+    </div>
+
+    <!-- TELA DO JOGO -->
+    <div id="gameScreen" class="screen">
+        <div class="card" style="padding:18px 16px;">
+            <div class="game-header">
+                <span class="phase-badge" id="faseDisplay">🏁 FASE 1</span>
+                <span style="color:#8aafd8; background:rgba(20,30,60,0.6); padding:4px 20px; border-radius:40px;" id="playerNameDisplay">👤 piloto</span>
+                <span class="lives-display" id="livesDisplay">❤️❤️❤️</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+            <canvas id="gameCanvas" width="900" height="500"></canvas>
+            <div class="hud">
+                <span>🏅 <strong id="scoreDisplay">0</strong> pts</span>
+                <span class="objetivo-box">🎯 <span id="objetivoDisplay">completar 2 voltas</span></span>
+                <span>🔄 <span id="voltaDisplay">0</span>/<span id="metaDisplay">2</span> voltas</span>
+                <span>⚡ <span class="velocidade-display" id="velocidadeDisplay">0</span> km/h</span>
+            </div>
+            <div class="status-msg" id="statusMessage">⬆️ Acelerar • ⬇️ Frear • ⬅️➡️ Direção • complete as voltas</div>
+            <div class="footer-actions">
+                <button id="nextPhaseBtn" class="btn-success">▶ próxima fase</button>
+                <button id="resetGameBtn" class="btn-secondary">🔄 reiniciar</button>
+                <button id="logoutBtn" style="background:#3a2a3a; border-color:#5a4a5a;">🚪 sair</button>
+            </div>
+            <div class="help-tip" style="margin-top:6px;">🕹️ Setas/WASD para controlar • F1 ajuda • complete as voltas para avançar</div>
+        </div>
+    </div>
+
+    <!-- TELA DE AJUDA (F1) -->
+    <div id="helpScreen" class="screen">
+        <div class="card">
+            <h2 style="color:#8ab8f0; text-align:center;">📖 AJUDA - CORRIDA</h2>
+            <ul>
+                <li><strong>Multiplayer:</strong> até 4 carros controlados por IA na pista</li>
+                <li><strong>Objetivo:</strong> completar o número de voltas indicado em cada fase</li>
+                <li><strong>Fases:</strong> 3 níveis com pistas mais longas e mais adversários</li>
+                <li><strong>Pontuação:</strong> +50 por volta, +100 bônus ao completar a fase</li>
+                <li><strong>Controles:</strong> ↑/W acelerar, ↓/S frear, ←/A e →/D virar</li>
+                <li><strong>Dica:</strong> Passe pelas linhas de chegada para contabilizar voltas</li>
+                <li><kbd>F1</kbd> abre/fecha ajuda • <kbd>ESC</kbd> fecha ajuda</li>
+            </ul>
+            <button id="closeHelpBtn" class="close-help" style="width:100%;">✖ FECHAR AJUDA</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- RANKING ----------
+        let ranking = JSON.parse(localStorage.getItem('corridaCarroRanking')) || [];
+        let currentUser = '';
+        let currentScore = 0;
+
+        // Elementos
+        const loginScreen = document.getElementById('loginScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const helpScreen = document.getElementById('helpScreen');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const faseDisplay = document.getElementById('faseDisplay');
+        const objetivoDisplay = document.getElementById('objetivoDisplay');
+        const voltaDisplay = document.getElementById('voltaDisplay');
+        const metaDisplay = document.getElementById('metaDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const progressFill = document.getElementById('progressFill');
+        const statusMessage = document.getElementById('statusMessage');
+        const playerNameDisplay = document.getElementById('playerNameDisplay');
+        const velocidadeDisplay = document.getElementById('velocidadeDisplay');
+
+        // ---------- ESTADO DO JOGO ----------
+        const CARRO_LARGURA = 30;
+        const CARRO_ALTURA = 18;
+        const MAX_VELOCIDADE = 5;
+        const ACELERACAO = 0.2;
+        const FRENAGEM = 0.15;
+        const ATRITO = 0.98;
+
+        let gameState = {
+            fase: 1,
+            score: 0,
+            vidas: 3,
+            maxVidas: 3,
+            metaVoltas: 2,
+            voltas: 0,
+            faseCompleta: false,
+            gameOver: false,
+            carros: [],
+            checkpoints: [],
+            playerIndex: 0,
+            ultimoCheckpoint: 0,
+            tempo: 0,
+        };
+
+        // Controles
+        const keys = { up: false, down: false, left: false, right: false };
+        let gameLoopId = null;
+
+        // ---------- RANKING ----------
+        function updateRankingList() {
+            const container = document.getElementById('rankingList');
+            if (!ranking.length) {
+                container.innerHTML = `<div class="rank-item"><span>sem pilotos</span><span>—</span></div>`;
+                return;
+            }
+            const sorted = [...ranking].sort((a,b) => b.score - a.score).slice(0,5);
+            container.innerHTML = sorted.map((p, i) => 
+                `<div class="rank-item"><span><span class="pos">${i+1}.</span> ${p.name}</span><span class="pts">${p.score}</span></div>`
+            ).join('');
+        }
+
+        function salvarRanking() {
+            localStorage.setItem('corridaCarroRanking', JSON.stringify(ranking));
+            updateRankingList();
+        }
+
+        function adicionarPontuacaoRanking(nome, pontos) {
+            const existente = ranking.find(p => p.name === nome);
+            if (existente) {
+                if (pontos > existente.score) existente.score = pontos;
+            } else {
+                ranking.push({ name: nome, score: pontos });
+            }
+            salvarRanking();
+        }
+
+        document.getElementById('resetRankBtn').addEventListener('click', function(){
+            if(confirm('Resetar ranking?')) {
+                ranking = [];
+                salvarRanking();
+            }
+        });
+
+        // ---------- LOGIN ----------
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            const input = document.getElementById('usernameInput');
+            const nome = input.value.trim() || 'Anônimo';
+            currentUser = nome;
+            playerNameDisplay.textContent = `👤 ${nome}`;
+            iniciarJogo();
+            loginScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            updateRankingList();
+        });
+
+        document.getElementById('usernameInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('loginBtn').click();
+        });
+
+        // ---------- LOGOUT ----------
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            if (currentUser && gameState.score > 0) {
+                adicionarPontuacaoRanking(currentUser, gameState.score);
+            }
+            gameScreen.classList.remove('active');
+            loginScreen.classList.add('active');
+            updateRankingList();
+        });
+
+        // ---------- GERAR PISTA ----------
+        function gerarPista(fase) {
+            const w = canvas.width, h = canvas.height;
+            const checkpoints = [];
+            const numCheckpoints = 4 + fase * 2;
+            
+            // Pontos de verificação em círculo
+            const centroX = w/2, centroY = h/2;
+            const raio = Math.min(w, h) * 0.35;
+            
+            for (let i = 0; i < numCheckpoints; i++) {
+                const angulo = (i / numCheckpoints) * Math.PI * 2 - Math.PI/2;
+                const x = centroX + Math.cos(angulo) * raio * (0.7 + Math.random() * 0.3);
+                const y = centroY + Math.sin(angulo) * raio * (0.7 + Math.random() * 0.3);
+                checkpoints.push({ x, y, passou: false, raio: 25 });
+            }
+            
+            return checkpoints;
+        }
+
+        // ---------- INICIAR JOGO ----------
+        function iniciarJogo() {
+            gameState.fase = 1;
+            gameState.score = 0;
+            gameState.vidas = 3;
+            gameState.voltas = 0;
+            gameState.metaVoltas = 2 + gameState.fase;
+            gameState.faseCompleta = false;
+            gameState.gameOver = false;
+            gameState.ultimoCheckpoint = 0;
+            gameState.tempo = 0;
+            currentScore = 0;
+
+            const w = canvas.width, h = canvas.height;
+            const checkpoints = gerarPista(1);
+            gameState.checkpoints = checkpoints;
+
+            // Carros (multiplayer)
+            const cores = ['#4a8ad8', '#d84a4a', '#4ad88a', '#d8d84a'];
+            const nomes = ['Você', 'IA 1', 'IA 2', 'IA 3'];
+            
+            gameState.carros = [];
+            for (let i = 0; i < 4; i++) {
+                const angulo = (i / 4) * Math.PI * 2;
+                const raio = 80 + i * 20;
+                gameState.carros.push({
+                    x: w/2 + Math.cos(angulo) * raio,
+                    y: h/2 + Math.sin(angulo) * raio,
+                    angulo: angulo + Math.PI/2,
+                    velocidade: 0,
+                    cor: cores[i % cores.length],
+                    nome: nomes[i % nomes.length],
+                    id: i,
+                    voltas: 0,
+                    ultimoCheckpoint: 0,
+                    checkpointsPassados: new Array(checkpoints.length).fill(false),
+                    controleIA: i > 0,
+                    largura: CARRO_LARGURA,
+                    altura: CARRO_ALTURA,
+                });
+            }
+            gameState.playerIndex = 0;
+
+            // Reset checkpoint dos carros
+            for (let carro of gameState.carros) {
+                carro.checkpointsPassados = new Array(checkpoints.length).fill(false);
+                carro.ultimoCheckpoint = 0;
+            }
+
+            atualizarHUD();
+            statusMessage.textContent = '🏁 Corrida iniciada! Complete as voltas!';
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            loopJogo();
+        }
+
+        function iniciarFase(fase) {
+            const w = canvas.width, h = canvas.height;
+            const checkpoints = gerarPista(fase);
+            gameState.checkpoints = checkpoints;
+            gameState.metaVoltas = 2 + fase;
+            gameState.voltas = 0;
+            gameState.faseCompleta = false;
+            gameState.ultimoCheckpoint = 0;
+
+            // Posicionar carros
+            for (let i = 0; i < gameState.carros.length; i++) {
+                const carro = gameState.carros[i];
+                const angulo = (i / gameState.carros.length) * Math.PI * 2;
+                const raio = 80 + i * 20;
+                carro.x = w/2 + Math.cos(angulo) * raio;
+                carro.y = h/2 + Math.sin(angulo) * raio;
+                carro.angulo = angulo + Math.PI/2;
+                carro.velocidade = 0;
+                carro.voltas = 0;
+                carro.ultimoCheckpoint = 0;
+                carro.checkpointsPassados = new Array(checkpoints.length).fill(false);
+            }
+
+            atualizarHUD();
+            statusMessage.textContent = `🏁 FASE ${fase} iniciada! Complete ${gameState.metaVoltas} voltas!`;
+        }
+
+        // ---------- ATUALIZAR HUD ----------
+        function atualizarHUD() {
+            scoreDisplay.textContent = gameState.score;
+            faseDisplay.textContent = `🏁 FASE ${gameState.fase}`;
+            voltaDisplay.textContent = gameState.voltas;
+            metaDisplay.textContent = gameState.metaVoltas;
+            objetivoDisplay.textContent = `completar ${gameState.metaVoltas} voltas`;
+
+            let coracoes = '';
+            for (let i = 0; i < gameState.maxVidas; i++) {
+                coracoes += i < gameState.vidas ? '❤️' : '🖤';
+            }
+            livesDisplay.textContent = coracoes;
+
+            const progresso = gameState.metaVoltas > 0 ? (gameState.voltas / gameState.metaVoltas * 100) : 0;
+            progressFill.style.width = Math.min(100, progresso) + '%';
+
+            // Velocidade do jogador
+            const jogador = gameState.carros[gameState.playerIndex];
+            if (jogador) {
+                const vel = Math.round(Math.abs(jogador.velocidade) * 40);
+                velocidadeDisplay.textContent = vel;
+            }
+
+            if (gameState.faseCompleta) {
+                statusMessage.textContent = `🎉 FASE ${gameState.fase} COMPLETA! +${100 + gameState.fase * 20} pts!`;
+            } else if (gameState.gameOver) {
+                statusMessage.textContent = '💀 GAME OVER! Clique em "reiniciar"';
+            }
+        }
+
+        // ---------- LOOP DO JOGO ----------
+        function loopJogo() {
+            if (!gameScreen.classList.contains('active')) {
+                return;
+            }
+            if (!gameState.gameOver && !gameState.faseCompleta) {
+                atualizarJogo();
+            }
+            desenharJogo();
+            gameLoopId = requestAnimationFrame(loopJogo);
+        }
+
+        function atualizarJogo() {
+            const jogador = gameState.carros[gameState.playerIndex];
+            const w = canvas.width, h = canvas.height;
+            gameState.tempo++;
+
+            // --- Controle do jogador ---
+            if (keys.up) {
+                jogador.velocidade = Math.min(jogador.velocidade + ACELERACAO, MAX_VELOCIDADE);
+            } else if (keys.down) {
+                jogador.velocidade = Math.max(jogador.velocidade - FRENAGEM, -MAX_VELOCIDADE * 0.5);
+            } else {
+                jogador.velocidade *= ATRITO;
+                if (Math.abs(jogador.velocidade) < 0.01) jogador.velocidade = 0;
+            }
+
+            if (keys.left) {
+                jogador.angulo -= 0.04 * (1 + Math.abs(jogador.velocidade) * 0.1);
+            }
+            if (keys.right) {
+                jogador.angulo += 0.04 * (1 + Math.abs(jogador.velocidade) * 0.1);
+            }
+
+            // Movimento do jogador
+            jogador.x += Math.cos(jogador.angulo) * jogador.velocidade;
+            jogador.y += Math.sin(jogador.angulo) * jogador.velocidade;
+
+            // Colisão com bordas (perde vida)
+            if (jogador.x < 10 || jogador.x > w - 10 || jogador.y < 10 || jogador.y > h - 10) {
+                if (!gameState.gameOver) {
+                    gameState.vidas--;
+                    if (gameState.vidas <= 0) {
+                        gameState.gameOver = true;
+                        statusMessage.textContent = '💀 GAME OVER! Bateu na borda.';
+                        if (currentUser) adicionarPontuacaoRanking(currentUser, gameState.score);
+                    } else {
+                        jogador.x = w/2 + 50;
+                        jogador.y = h/2;
+                        jogador.velocidade = 0;
+                        statusMessage.textContent = `💥 Bateu! -1 vida. restam ${gameState.vidas}`;
+                    }
+                    atualizarHUD();
+                }
+            }
+
+            // --- IA dos carros adversários ---
+            for (let i = 1; i < gameState.carros.length; i++) {
+                const carro = gameState.carros[i];
+                if (carro.controleIA) {
+                    // IA simples: segue o checkpoint mais próximo
+                    let targetIdx = (carro.ultimoCheckpoint + 1) % gameState.checkpoints.length;
+                    const target = gameState.checkpoints[targetIdx];
+                    if (target) {
+                        const dx = target.x - carro.x;
+                        const dy = target.y - carro.y;
+                        const dist = Math.hypot(dx, dy);
+                        const anguloAlvo = Math.atan2(dy, dx);
+                        let diff = anguloAlvo - carro.angulo;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        carro.angulo += diff * 0.03;
+                        
+                        // Acelera e freia
+                        if (dist > 30) {
+                            carro.velocidade = Math.min(carro.velocidade + ACELERACAO * 0.8, MAX_VELOCIDADE * 0.8);
+                        } else {
+                            carro.velocidade *= 0.95;
+                        }
+                    }
+
+                    carro.x += Math.cos(carro.angulo) * carro.velocidade;
+                    carro.y += Math.sin(carro.angulo) * carro.velocidade;
+
+                    // Borda para IA
+                    if (carro.x < 10 || carro.x > w - 10 || carro.y < 10 || carro.y > h - 10) {
+                        carro.velocidade *= -0.5;
+                        carro.angulo += Math.PI * 0.5;
+                    }
+                }
+            }
+
+            // --- Verificar checkpoints (jogador) ---
+            const checkpoints = gameState.checkpoints;
+            for (let i = 0; i < checkpoints.length; i++) {
+                const cp = checkpoints[i];
+                const dist = Math.hypot(jogador.x - cp.x, jogador.y - cp.y);
+                if (dist < cp.raio && !jogador.checkpointsPassados[i]) {
+                    jogador.checkpointsPassados[i] = true;
+                    jogador.ultimoCheckpoint = i;
+                    
+                    // Se passou por todos os checkpoints, completou uma volta
+                    if (jogador.checkpointsPassados.every(v => v === true)) {
+                        jogador.voltas++;
+                        jogador.checkpointsPassados = new Array(checkpoints.length).fill(false);
+                        gameState.voltas = jogador.voltas;
+                        gameState.score += 50;
+                        statusMessage.textContent = `🔄 Volta ${jogador.voltas}/${gameState.metaVoltas} completada! +50 pts`;
+                        atualizarHUD();
+                        
+                        // Verificar se completou a fase
+                        if (jogador.voltas >= gameState.metaVoltas) {
+                            gameState.faseCompleta = true;
+                            const bonus = 100 + gameState.fase * 20;
+                            gameState.score += bonus;
+                            if (currentUser) adicionarPontuacaoRanking(currentUser, gameState.score);
+                            statusMessage.textContent = `🎉 FASE ${gameState.fase} COMPLETA! +${bonus} pts!`;
+                            atualizarHUD();
+                        }
+                    }
+                    break;
+                }
+            }
+
+            // IA também passa por checkpoints
+            for (let i = 1; i < gameState.carros.length; i++) {
+                const carro = gameState.carros[i];
+                for (let j = 0; j < checkpoints.length; j++) {
+                    const cp = checkpoints[j];
+                    const dist = Math.hypot(carro.x - cp.x, carro.y - cp.y);
+                    if (dist < cp.raio && !carro.checkpointsPassados[j]) {
+                        carro.checkpointsPassados[j] = true;
+                        carro.ultimoCheckpoint = j;
+                        if (carro.checkpointsPassados.every(v => v === true)) {
+                            carro.voltas++;
+                            carro.checkpointsPassados = new Array(checkpoints.length).fill(false);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // ---------- DESENHO ----------
+        function desenharJogo() {
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            // Fundo
+            const grad = ctx.createRadialGradient(w/2, h/2, 50, w/2, h/2, 500);
+            grad.addColorStop(0, '#1a2a3a');
+            grad.addColorStop(1, '#0a0a1a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Pista (linhas de guia)
+            ctx.strokeStyle = 'rgba(60, 100, 140, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 15]);
+            
+            const checkpoints = gameState.checkpoints;
+            if (checkpoints.length > 1) {
+                for (let i = 0; i < checkpoints.length; i++) {
+                    const next = (i + 1) % checkpoints.length;
+                    ctx.beginPath();
+                    ctx.moveTo(checkpoints[i].x, checkpoints[i].y);
+                    ctx.lineTo(checkpoints[next].x, checkpoints[next].y);
+                    ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+
+            // Checkpoints
+            for (let i = 0; i < checkpoints.length; i++) {
+                const cp = checkpoints[i];
+                const isPassed = gameState.carros[gameState.playerIndex].checkpointsPassados[i];
+                ctx.shadowColor = isPassed ? '#4ad8a0' : '#4a8ad8';
+                ctx.shadowBlur = isPassed ? 30 : 15;
+                
+                ctx.fillStyle = isPassed ? 'rgba(74, 216, 160, 0.3)' : 'rgba(74, 138, 216, 0.2)';
+                ctx.strokeStyle = isPassed ? '#4ad8a0' : '#4a8ad8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(cp.x, cp.y, cp.raio, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.fillStyle = isPassed ? '#4ad8a0' : '#4a8ad8';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((i + 1).toString(), cp.x, cp.y);
+                ctx.shadowBlur = 0;
+            }
+
+            // Carros
+            for (let carro of gameState.carros) {
+                const isMain = (carro.id === gameState.playerIndex);
+                ctx.save();
+                ctx.translate(carro.x, carro.y);
+                ctx.rotate(carro.angulo);
+                
+                // Sombra
+                ctx.shadowColor = isMain ? '#4a8ad8' : carro.cor;
+                ctx.shadowBlur = isMain ? 30 : 15;
+                
+                // Corpo do carro
+                const wc = carro.largura, hc = carro.altura;
+                ctx.fillStyle = carro.cor;
+                ctx.fillRect(-wc/2, -hc/2, wc, hc);
+                
+                // Detalhes do carro
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillRect(-wc/2 + 4, -hc/2 + 3, 6, 4);
+                ctx.fillRect(-wc/2 + 4, hc/2 - 7, 6, 4);
+                ctx.fillRect(wc/2 - 10, -hc/2 + 3, 6, 4);
+                ctx.fillRect(wc/2 - 10, hc/2 - 7, 6, 4);
+                
+                // Faróis
+                ctx.fillStyle = '#f0d060';
+                ctx.shadowColor = '#f0d060';
+                ctx.shadowBlur = 10;
+                ctx.fillRect(wc/2 - 4, -4, 4, 3);
+                ctx.fillRect(wc/2 - 4, 1, 4, 3);
+                ctx.shadowBlur = 0;
+                
+                // Contorno do jogador principal
+                if (isMain) {
+                    ctx.strokeStyle = '#6ab0f0';
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 0;
+                    ctx.strokeRect(-wc/2 - 3, -hc/2 - 3, wc + 6, hc + 6);
+                }
+                
+                ctx.restore();
+                
+                // Nome do carro
+                ctx.fillStyle = isMain ? '#6ab0f0' : '#8aafd8';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(isMain ? '👤 ' + carro.nome : carro.nome, carro.x, carro.y - carro.altura/2 - 5);
+                
+                // Voltas do carro
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.font = '10px sans-serif';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`🔄 ${carro.voltas}`, carro.x, carro.y + carro.altura/2 + 5);
+            }
+
+            // Linha de chegada/partida
+            const start = checkpoints[0];
+            if (start) {
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                ctx.strokeStyle = '#f0d060';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 10]);
+                ctx.beginPath();
+                ctx.arc(start.x, start.y, start.raio + 8, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = '#f0d060';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText('🏁', start.x, start.y - start.raio - 5);
+            }
+
+            // Instruções
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('↑/W: Acelerar • ↓/S: Frear • ←/A →/D: Virar', 10, canvas.height - 10);
+        }
+
+        // ---------- CONTROLES TECLADO ----------
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+                e.preventDefault();
+                keys.up = true;
+            }
+            if (key === 'ArrowDown' || key === 's' || key === 'S') {
+                e.preventDefault();
+                keys.down = true;
+            }
+            if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+                e.preventDefault();
+                keys.left = true;
+            }
+            if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+                e.preventDefault();
+                keys.right = true;
+            }
+            if (key === 'F1') {
+                e.preventDefault();
+                if (gameScreen.classList.contains('active')) {
+                    if (helpScreen.classList.contains('active')) {
+                        helpScreen.classList.remove('active');
+                    } else {
+                        helpScreen.classList.add('active');
+                    }
+                }
+            }
+            if (key === 'Escape') {
+                if (helpScreen.classList.contains('active')) {
+                    helpScreen.classList.remove('active');
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const key = e.key;
+            if (key === 'ArrowUp' || key === 'w' || key === 'W') {
+                e.preventDefault();
+                keys.up = false;
+            }
+            if (key === 'ArrowDown' || key === 's' || key === 'S') {
+                e.preventDefault();
+                keys.down = false;
+            }
+            if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+                e.preventDefault();
+                keys.left = false;
+            }
+            if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+                e.preventDefault();
+                keys.right = false;
+            }
+        });
+
+        // ---------- BOTÕES ----------
+        document.getElementById('closeHelpBtn').addEventListener('click', () => {
+            helpScreen.classList.remove('active');
+        });
+
+        document.getElementById('nextPhaseBtn').addEventListener('click', function() {
+            if (gameState.faseCompleta && gameState.fase < 3) {
+                gameState.fase++;
+                iniciarFase(gameState.fase);
+                // Reset posição do jogador
+                const jogador = gameState.carros[gameState.playerIndex];
+                jogador.x = canvas.width/2 + 50;
+                jogador.y = canvas.height/2;
+                jogador.velocidade = 0;
+                atualizarHUD();
+                statusMessage.textContent = `🏁 FASE ${gameState.fase} iniciada! Complete ${gameState.metaVoltas} voltas!`;
+            } else if (gameState.fase >= 3 && gameState.faseCompleta) {
+                statusMessage.textContent = '🏆 PARABÉNS! Você completou todas as fases!';
+                if (currentUser) adicionarPontuacaoRanking(currentUser, gameState.score);
+            } else {
+                statusMessage.textContent = '⚠️ Complete a fase atual primeiro!';
+            }
+        });
+
+        document.getElementById('resetGameBtn').addEventListener('click', function() {
+            if (confirm('Reiniciar jogo? Progresso será perdido.')) {
+                if (currentUser && gameState.score > 0) {
+                    adicionarPontuacaoRanking(currentUser, gameState.score);
+                }
+                iniciarJogo();
+            }
+        });
+
+        // ---------- INICIALIZAÇÃO ----------
+        updateRankingList();
+        document.getElementById('usernameInput').focus();
+
+    })();
+</script>
+</body>
+</html>

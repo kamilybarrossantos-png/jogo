@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏃 Corrida Multijogador - Plataforma</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a1a2e 50%, #16213e 100%);
+            font-family: 'Segoe UI', 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        #game-container {
+            background: rgba(20, 25, 45, 0.95);
+            border: 2px solid #4a6fa5;
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8), 0 0 40px rgba(74, 111, 165, 0.2);
+            max-width: 950px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 5px;
+            animation: fadeIn 0.4s ease;
+        }
+        .screen.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            background: rgba(30, 40, 70, 0.8);
+            border: 1px solid #4a6fa5;
+            border-radius: 25px;
+            padding: 30px 28px;
+            width: 100%;
+            box-shadow: inset 0 2px 20px rgba(0,0,0,0.4);
+        }
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        input, button {
+            background: rgba(20, 30, 60, 0.9);
+            border: 2px solid #3a5a8a;
+            color: #f0f0f0;
+            padding: 14px 24px;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            outline: none;
+            font-family: inherit;
+        }
+        input {
+            flex: 2;
+            min-width: 150px;
+        }
+        input:focus {
+            border-color: #6a9fd8;
+            box-shadow: 0 0 20px rgba(74, 111, 165, 0.4);
+            background: rgba(30, 45, 80, 0.9);
+        }
+        button {
+            background: linear-gradient(145deg, #2a4a7a, #1a3a6a);
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            border-color: #5a8ab5;
+            box-shadow: 0 4px 0 #0a1a3a;
+            transition: all 0.15s;
+            font-weight: 700;
+        }
+        button:hover {
+            background: linear-gradient(145deg, #3a5a8a, #2a4a7a);
+            transform: scale(0.97);
+            border-color: #7aaad5;
+        }
+        button:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        .btn-secondary {
+            background: linear-gradient(145deg, #4a3a5a, #3a2a4a);
+            border-color: #6a5a8a;
+            box-shadow: 0 4px 0 #1a0a2a;
+        }
+        .btn-secondary:hover {
+            background: linear-gradient(145deg, #5a4a6a, #4a3a5a);
+        }
+        .btn-success {
+            background: linear-gradient(145deg, #2a7a4a, #1a6a3a);
+            border-color: #4aaa6a;
+            box-shadow: 0 4px 0 #0a3a1a;
+        }
+        .btn-success:hover {
+            background: linear-gradient(145deg, #3a8a5a, #2a7a4a);
+        }
+        .rank-list {
+            background: rgba(10, 15, 30, 0.7);
+            border-radius: 18px;
+            padding: 12px 16px;
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 0.95rem;
+            border: 1px solid #3a4a6a;
+            margin-top: 8px;
+        }
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(60, 80, 120, 0.3);
+            font-weight: 500;
+        }
+        .rank-item:last-child {
+            border: none;
+        }
+        .rank-item .pos {
+            color: #8aafd8;
+            margin-right: 12px;
+        }
+        .rank-item .pts {
+            color: #f0d060;
+            font-weight: 700;
+        }
+        .highlight {
+            color: #f0d060;
+            font-weight: bold;
+        }
+        .title {
+            font-size: 2.2rem;
+            font-weight: 300;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #6a9fd8, #aac8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+        }
+        .subtitle {
+            color: #8aafd8;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        .help-tip {
+            background: rgba(30, 40, 70, 0.6);
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            color: #7a9ac0;
+            border: 1px dashed #4a6a8a;
+            cursor: default;
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            width: 100%;
+            padding: 8px 4px;
+            gap: 10px;
+        }
+        .game-header .phase-badge {
+            background: rgba(30, 50, 90, 0.7);
+            padding: 6px 22px;
+            border-radius: 40px;
+            border: 1px solid #4a7a9a;
+            font-weight: 700;
+            color: #aac8ff;
+            font-size: 1.1rem;
+        }
+        #gameCanvas {
+            background: #0d0d1a;
+            border-radius: 20px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            display: block;
+            border: 2px solid #2a3a5a;
+            box-shadow: inset 0 0 60px rgba(0,0,0,0.8);
+            cursor: crosshair;
+        }
+        .hud {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 10px 4px 0 4px;
+            gap: 8px;
+            font-size: 1rem;
+            color: #b0c8e8;
+        }
+        .hud span {
+            background: rgba(20, 30, 60, 0.6);
+            padding: 6px 16px;
+            border-radius: 40px;
+            border: 1px solid #3a5a7a;
+        }
+        .status-msg {
+            background: rgba(20, 30, 60, 0.7);
+            padding: 10px 20px;
+            border-radius: 60px;
+            border-left: 6px solid #4a8ad8;
+            font-weight: 600;
+            color: #d0dff0;
+            width: 100%;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .footer-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin: 6px 0;
+            width: 100%;
+        }
+        .lives-display {
+            color: #f0a0a0;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(30, 40, 70, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 4px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a8ad8, #6ab0f0);
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        /* Help screen overlay */
+        #helpScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 8, 20, 0.92);
+            backdrop-filter: blur(6px);
+            border-radius: 30px;
+            z-index: 100;
+            justify-content: center;
+            padding: 30px;
+        }
+        #helpScreen .card {
+            max-width: 550px;
+            margin: auto;
+            border: 2px solid #5a7aaa;
+        }
+        #helpScreen ul {
+            text-align: left;
+            list-style: none;
+            line-height: 2.4;
+            padding: 8px 12px;
+        }
+        #helpScreen ul li::before {
+            content: "▸ ";
+            color: #6a9fd8;
+        }
+        .close-help {
+            margin-top: 16px;
+        }
+        .objetivo-box {
+            background: rgba(20, 40, 70, 0.5);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border-left: 3px solid #f0d060;
+        }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <!-- TELA DE LOGIN + RANKING -->
+    <div id="loginScreen" class="screen active">
+        <div class="card" style="text-align:center;">
+            <div class="title">🏃 CORRIDA</div>
+            <div class="subtitle">multiplayer • fases • ranking</div>
+            <div style="margin: 18px 0 8px;">
+                <div class="input-group">
+                    <input type="text" id="usernameInput" placeholder="Seu nome" value="Corredor" style="flex:2;">
+                    <button id="loginBtn">🚀 ENTRAR</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #3a4a6a; padding-top: 18px; margin-top: 6px;">
+                <div style="display:flex; justify-content:space-between; padding:0 6px; font-weight:300; color:#8aafd8;">
+                    <span>🏆 RANKING</span>
+                    <span>top 5</span>
+                </div>
+                <div id="rankingList" class="rank-list">
+                    <div class="rank-item"><span>— carregando —</span><span></span></div>
+                </div>
+                <button id="resetRankBtn" class="btn-secondary" style="margin-top:10px; font-size:0.75rem; padding:8px 18px;">🔄 resetar ranking</button>
+            </div>
+            <div class="help-tip" style="margin-top:16px;">📖 Pressione F1 durante o jogo para ajuda</div>
+        </div>
+    </div>
+
+    <!-- TELA DO JOGO -->
+    <div id="gameScreen" class="screen">
+        <div class="card" style="padding:18px 16px;">
+            <div class="game-header">
+                <span class="phase-badge" id="faseDisplay">FASE 1</span>
+                <span style="color:#8aafd8; background:rgba(20,30,60,0.6); padding:4px 20px; border-radius:40px;" id="playerNameDisplay">👤 jogador</span>
+                <span class="lives-display" id="livesDisplay">❤️❤️❤️</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+            <canvas id="gameCanvas" width="800" height="450"></canvas>
+            <div class="hud">
+                <span>🏅 <strong id="scoreDisplay">0</strong> pts</span>
+                <span class="objetivo-box">🎯 <span id="objetivoDisplay">colete 5 moedas</span></span>
+                <span>📦 <span id="coletadosDisplay">0</span>/<span id="metaDisplay">5</span></span>
+            </div>
+            <div class="status-msg" id="statusMessage">⬆️⬇️⬅️➡️ mova-se • colete moedas • evite os obstáculos</div>
+            <div class="footer-actions">
+                <button id="nextPhaseBtn" class="btn-success">▶ próxima fase</button>
+                <button id="resetGameBtn" class="btn-secondary">🔄 reiniciar</button>
+                <button id="logoutBtn" style="background:#3a2a3a; border-color:#5a4a5a;">🚪 sair</button>
+            </div>
+            <div class="help-tip" style="margin-top:6px;">🕹️ WASD/Setas mover • F1 ajuda • complete a meta para avançar</div>
+        </div>
+    </div>
+
+    <!-- TELA DE AJUDA (F1) -->
+    <div id="helpScreen" class="screen">
+        <div class="card">
+            <h2 style="color:#8ab8f0; text-align:center;">📖 AJUDA - CORRIDA</h2>
+            <ul>
+                <li><strong>Multiplayer:</strong> até 4 jogadores locais (simulado) na mesma tela</li>
+                <li><strong>Objetivo:</strong> coletar o número de moedas indicado em cada fase</li>
+                <li><strong>Fases:</strong> 3 níveis com obstáculos e dificuldade crescente</li>
+                <li><strong>Pontuação:</strong> +10 por moeda, +50 bônus ao completar fase</li>
+                <li><strong>Vidas:</strong> 3 vidas. Obstáculos e bordas reduzem vidas</li>
+                <li><strong>Controles:</strong> WASD ou setas para mover o personagem</li>
+                <li><kbd>F1</kbd> abre/fecha ajuda • <kbd>ESC</kbd> fecha ajuda</li>
+            </ul>
+            <button id="closeHelpBtn" class="close-help" style="width:100%;">✖ FECHAR AJUDA</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- RANKING ----------
+        let ranking = JSON.parse(localStorage.getItem('corridaRanking')) || [];
+        let currentUser = '';
+        let currentScore = 0;
+
+        // Elementos
+        const loginScreen = document.getElementById('loginScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const helpScreen = document.getElementById('helpScreen');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const faseDisplay = document.getElementById('faseDisplay');
+        const objetivoDisplay = document.getElementById('objetivoDisplay');
+        const coletadosDisplay = document.getElementById('coletadosDisplay');
+        const metaDisplay = document.getElementById('metaDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const progressFill = document.getElementById('progressFill');
+        const statusMessage = document.getElementById('statusMessage');
+        const playerNameDisplay = document.getElementById('playerNameDisplay');
+
+        // ---------- ESTADO DO JOGO ----------
+        const TAM = 24;
+        const VEL = 4;
+
+        let gameState = {
+            fase: 1,
+            score: 0,
+            vidas: 3,
+            maxVidas: 3,
+            meta: 5,
+            coletados: 0,
+            faseCompleta: false,
+            gameOver: false,
+            players: [],
+            moedas: [],
+            obstaculos: [],
+            playerIndex: 0,
+        };
+
+        // Controles
+        const keys = { up: false, down: false, left: false, right: false };
+        let gameLoopId = null;
+        let animFrame = 0;
+
+        // ---------- RANKING ----------
+        function updateRankingList() {
+            const container = document.getElementById('rankingList');
+            if (!ranking.length) {
+                container.innerHTML = `<div class="rank-item"><span>sem jogadores</span><span>—</span></div>`;
+                return;
+            }
+            const sorted = [...ranking].sort((a,b) => b.score - a.score).slice(0,5);
+            container.innerHTML = sorted.map((p, i) => 
+                `<div class="rank-item"><span><span class="pos">${i+1}.</span> ${p.name}</span><span class="pts">${p.score}</span></div>`
+            ).join('');
+        }
+
+        function salvarRanking() {
+            localStorage.setItem('corridaRanking', JSON.stringify(ranking));
+            updateRankingList();
+        }
+
+        function adicionarPontuacaoRanking(nome, pontos) {
+            const existente = ranking.find(p => p.name === nome);
+            if (existente) {
+                if (pontos > existente.score) existente.score = pontos;
+            } else {
+                ranking.push({ name: nome, score: pontos });
+            }
+            salvarRanking();
+        }
+
+        document.getElementById('resetRankBtn').addEventListener('click', function(){
+            if(confirm('Resetar ranking?')) {
+                ranking = [];
+                salvarRanking();
+            }
+        });
+
+        // ---------- LOGIN ----------
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            const input = document.getElementById('usernameInput');
+            const nome = input.value.trim() || 'Anônimo';
+            currentUser = nome;
+            playerNameDisplay.textContent = `👤 ${nome}`;
+            iniciarJogo();
+            loginScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            updateRankingList();
+        });
+
+        document.getElementById('usernameInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('loginBtn').click();
+        });
+
+        // ---------- LOGOUT ----------
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            if (currentUser && gameState.score > 0) {
+                adicionarPontuacaoRanking(currentUser, gameState.score);
+            }
+            gameScreen.classList.remove('active');
+            loginScreen.classList.add('active');
+            updateRankingList();
+        });
+
+        // ---------- INICIAR JOGO ----------
+        function iniciarJogo() {
+            gameState.fase = 1;
+            gameState.score = 0;
+            gameState.vidas = 3;
+            gameState.coletados = 0;
+            gameState.meta = 5;
+            gameState.faseCompleta = false;
+            gameState.gameOver = false;
+            currentScore = 0;
+
+            // Jogadores (multiplayer simulado)
+            gameState.players = [
+                { x: 100, y: 200, cor: '#4a8ad8', id: 0, nome: 'Você' },
+                { x: 700, y: 200, cor: '#d84a8a', id: 1, nome: 'Jogador2' },
+                { x: 100, y: 380, cor: '#4ad88a', id: 2, nome: 'Jogador3' },
+                { x: 700, y: 380, cor: '#d8d84a', id: 3, nome: 'Jogador4' },
+            ];
+            gameState.playerIndex = 0;
+
+            gerarFase(1);
+            atualizarHUD();
+            statusMessage.textContent = '🏃 Colete todas as moedas! Cuidado com os obstáculos!';
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            loopJogo();
+        }
+
+        function gerarFase(fase) {
+            const w = canvas.width, h = canvas.height;
+            const qtdMoedas = 5 + (fase-1) * 3; // fase1:5, fase2:8, fase3:11
+            gameState.meta = qtdMoedas;
+            gameState.coletados = 0;
+            gameState.moedas = [];
+            gameState.obstaculos = [];
+
+            // Moedas
+            for (let i = 0; i < qtdMoedas; i++) {
+                let x, y, valido;
+                let tentativas = 0;
+                do {
+                    x = 40 + Math.random() * (w - 80);
+                    y = 40 + Math.random() * (h - 80);
+                    valido = true;
+                    // Não gerar em cima dos jogadores
+                    for (let p of gameState.players) {
+                        if (Math.hypot(x - p.x, y - p.y) < 50) valido = false;
+                    }
+                    // Não gerar em cima de outras moedas
+                    for (let m of gameState.moedas) {
+                        if (Math.hypot(x - m.x, y - m.y) < 30) valido = false;
+                    }
+                    tentativas++;
+                } while (!valido && tentativas < 100);
+                gameState.moedas.push({ x, y, coletada: false, tamanho: 12 });
+            }
+
+            // Obstáculos (aumenta com a fase)
+            const qtdObs = 3 + (fase-1) * 2;
+            for (let i = 0; i < qtdObs; i++) {
+                let x, y, valido;
+                let tentativas = 0;
+                do {
+                    x = 30 + Math.random() * (w - 60);
+                    y = 30 + Math.random() * (h - 60);
+                    valido = true;
+                    for (let p of gameState.players) {
+                        if (Math.hypot(x - p.x, y - p.y) < 70) valido = false;
+                    }
+                    for (let m of gameState.moedas) {
+                        if (Math.hypot(x - m.x, y - m.y) < 40) valido = false;
+                    }
+                    tentativas++;
+                } while (!valido && tentativas < 100);
+                const tipos = ['🪨', '🧱', '⚡', '🔥'];
+                gameState.obstaculos.push({
+                    x, y,
+                    tipo: tipos[i % tipos.length],
+                    tamanho: 16 + Math.random() * 10,
+                    velocidade: 0.5 + Math.random() * 0.8,
+                    dx: (Math.random() - 0.5) * 1.5,
+                    dy: (Math.random() - 0.5) * 1.5,
+                });
+            }
+
+            gameState.faseCompleta = false;
+            gameState.gameOver = false;
+        }
+
+        // ---------- ATUALIZAR HUD ----------
+        function atualizarHUD() {
+            scoreDisplay.textContent = gameState.score;
+            faseDisplay.textContent = `FASE ${gameState.fase}`;
+            coletadosDisplay.textContent = gameState.coletados;
+            metaDisplay.textContent = gameState.meta;
+            objetivoDisplay.textContent = `colete ${gameState.meta} moedas`;
+
+            let coracoes = '';
+            for (let i = 0; i < gameState.maxVidas; i++) {
+                coracoes += i < gameState.vidas ? '❤️' : '🖤';
+            }
+            livesDisplay.textContent = coracoes;
+
+            const progresso = gameState.meta > 0 ? (gameState.coletados / gameState.meta * 100) : 0;
+            progressFill.style.width = Math.min(100, progresso) + '%';
+
+            if (gameState.faseCompleta) {
+                statusMessage.textContent = `🎉 FASE ${gameState.fase} COMPLETA! +50 pts!`;
+            } else if (gameState.gameOver) {
+                statusMessage.textContent = '💀 GAME OVER! Clique em "reiniciar"';
+            }
+        }
+
+        // ---------- LOOP DO JOGO ----------
+        function loopJogo() {
+            if (!gameScreen.classList.contains('active')) return;
+            if (!gameState.gameOver && !gameState.faseCompleta) {
+                atualizarJogo();
+            }
+            desenharJogo();
+            gameLoopId = requestAnimationFrame(loopJogo);
+        }
+
+        function atualizarJogo() {
+            const p = gameState.players[gameState.playerIndex];
+            const w = canvas.width, h = canvas.height;
+
+            // Movimento do jogador principal
+            let dx = 0, dy = 0;
+            if (keys.up) dy -= VEL;
+            if (keys.down) dy += VEL;
+            if (keys.left) dx -= VEL;
+            if (keys.right) dx += VEL;
+            if (dx || dy) {
+                const len = Math.hypot(dx, dy);
+                if (len > 0) { dx = dx/len * VEL; dy = dy/len * VEL; }
+                p.x = Math.min(w - TAM/2, Math.max(TAM/2, p.x + dx));
+                p.y = Math.min(h - TAM/2, Math.max(TAM/2, p.y + dy));
+            }
+
+            // Movimento dos outros jogadores (simulado)
+            for (let i = 1; i < gameState.players.length; i++) {
+                const jog = gameState.players[i];
+                // Movimento aleatório
+                jog.x += (Math.random() - 0.5) * 1.2;
+                jog.y += (Math.random() - 0.5) * 1.2;
+                jog.x = Math.min(w - TAM/2, Math.max(TAM/2, jog.x));
+                jog.y = Math.min(h - TAM/2, Math.max(TAM/2, jog.y));
+                // Tenta fugir de obstáculos
+                for (let obs of gameState.obstaculos) {
+                    if (Math.hypot(jog.x - obs.x, jog.y - obs.y) < 40) {
+                        const ang = Math.atan2(jog.y - obs.y, jog.x - obs.x);
+                        jog.x += Math.cos(ang) * 0.8;
+                        jog.y += Math.sin(ang) * 0.8;
+                    }
+                }
+                // Tenta ir em direção a moedas
+                let maisPerto = null, distMin = Infinity;
+                for (let m of gameState.moedas) {
+                    if (!m.coletada) {
+                        const d = Math.hypot(jog.x - m.x, jog.y - m.y);
+                        if (d < distMin) { distMin = d; maisPerto = m; }
+                    }
+                }
+                if (maisPerto && distMin < 200) {
+                    const ang = Math.atan2(maisPerto.y - jog.y, maisPerto.x - jog.x);
+                    jog.x += Math.cos(ang) * 0.6;
+                    jog.y += Math.sin(ang) * 0.6;
+                }
+            }
+
+            // Movimento dos obstáculos
+            for (let obs of gameState.obstaculos) {
+                obs.x += obs.dx;
+                obs.y += obs.dy;
+                if (obs.x < 20 || obs.x > w - 20) obs.dx *= -1;
+                if (obs.y < 20 || obs.y > h - 20) obs.dy *= -1;
+            }
+
+            // Coleta de moedas (jogador principal)
+            for (let moeda of gameState.moedas) {
+                if (!moeda.coletada) {
+                    const dist = Math.hypot(p.x - moeda.x, p.y - moeda.y);
+                    if (dist < TAM/2 + moeda.tamanho/2) {
+                        moeda.coletada = true;
+                        gameState.coletados++;
+                        gameState.score += 10;
+                        atualizarHUD();
+                    }
+                }
+            }
+
+            // Verifica se coletou todas
+            if (gameState.coletados >= gameState.meta && !gameState.faseCompleta) {
+                gameState.faseCompleta = true;
+                gameState.score += 50;
+                if (currentUser) adicionarPontuacaoRanking(currentUser, gameState.score);
+                atualizarHUD();
+                statusMessage.textContent = `🎉 FASE ${gameState.fase} COMPLETA!`;
+            }
+
+            // Colisão com obstáculos (jogador principal)
+            if (!gameState.gameOver && !gameState.faseCompleta) {
+                for (let obs of gameState.obstaculos) {
+                    const dist = Math.hypot(p.x - obs.x, p.y - obs.y);
+                    if (dist < TAM/2 + obs.tamanho/2) {
+                        gameState.vidas--;
+                        if (gameState.vidas <= 0) {
+                            gameState.gameOver = true;
+                            statusMessage.textContent = '💀 GAME OVER!';
+                            if (currentUser) adicionarPontuacaoRanking(currentUser, gameState.score);
+                        } else {
+                            // Reposiciona jogador
+                            p.x = 100; p.y = 200;
+                            statusMessage.textContent = `💥 -1 vida! restam ${gameState.vidas}`;
+                        }
+                        atualizarHUD();
+                        break;
+                    }
+                }
+            }
+
+            // Colisão com obstáculos para outros jogadores
+            for (let i = 1; i < gameState.players.length; i++) {
+                const jog = gameState.players[i];
+                for (let obs of gameState.obstaculos) {
+                    const dist = Math.hypot(jog.x - obs.x, jog.y - obs.y);
+                    if (dist < TAM/2 + obs.tamanho/2) {
+                        jog.x = 50 + Math.random() * 700;
+                        jog.y = 50 + Math.random() * 350;
+                    }
+                }
+            }
+        }
+
+        // ---------- DESENHO ----------
+        function desenharJogo() {
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            // Fundo
+            const grad = ctx.createRadialGradient(400, 200, 50, 400, 200, 500);
+            grad.addColorStop(0, '#1a1a3a');
+            grad.addColorStop(1, '#0a0a1a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Grid
+            ctx.strokeStyle = 'rgba(60, 80, 120, 0.15)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < w; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, h);
+                ctx.stroke();
+            }
+            for (let i = 0; i < h; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(w, i);
+                ctx.stroke();
+            }
+
+            // Obstáculos
+            for (let obs of gameState.obstaculos) {
+                ctx.shadowColor = '#ff4444';
+                ctx.shadowBlur = 20;
+                ctx.font = `${obs.tamanho + 8}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(obs.tipo, obs.x, obs.y);
+                ctx.shadowBlur = 0;
+                // Círculo de perigo
+                ctx.strokeStyle = 'rgba(255, 50, 50, 0.2)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.tamanho/2 + 8, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Moedas
+            for (let moeda of gameState.moedas) {
+                if (moeda.coletada) continue;
+                ctx.shadowColor = '#f0d060';
+                ctx.shadowBlur = 25;
+                ctx.fillStyle = '#f0d060';
+                ctx.beginPath();
+                ctx.arc(moeda.x, moeda.y, moeda.tamanho/2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#c8a030';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🪙', moeda.x, moeda.y - 1);
+                ctx.shadowBlur = 0;
+                // Brilho
+                ctx.fillStyle = 'rgba(255, 240, 150, 0.3)';
+                ctx.beginPath();
+                ctx.arc(moeda.x - 3, moeda.y - 4, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Jogadores
+            for (let i = 0; i < gameState.players.length; i++) {
+                const p = gameState.players[i];
+                const isMain = (i === gameState.playerIndex);
+                ctx.shadowColor = isMain ? '#4a8ad8' : p.cor;
+                ctx.shadowBlur = isMain ? 30 : 15;
+
+                // Corpo
+                ctx.fillStyle = p.cor;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, TAM/2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Contorno do principal
+                if (isMain) {
+                    ctx.strokeStyle = '#6ab0f0';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, TAM/2 + 4, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                // Rosto
+                ctx.fillStyle = '#f0e8d0';
+                ctx.font = '18px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const emojis = ['🧑', '👩', '🧑‍🦰', '👨
